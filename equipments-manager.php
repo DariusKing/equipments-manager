@@ -34,4 +34,4 @@ $admin = new EquipmentsManagerAdminSettings();
 function equipments_manager_add_css() {
 	wp_enqueue_style( 'equipments_manager_css', plugin_dir_url( __FILE__ ) . 'css/style.css' );
 }
-add_action( 'admin_init', 'equipments_manager_add_css' );
+add_action( 'init', 'equipments_manager_add_css' );

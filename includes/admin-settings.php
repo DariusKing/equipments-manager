@@ -8,7 +8,7 @@ class EquipmentsManagerAdminSettings {
 	/**
 	 * @var string $prefix The prefix for storing custom fields in the postmeta table.
 	 */
-	var $prefix = '_em_';
+	var $prefix = 'em_';
 	/**
 	 * @var string $post_type Custom type name.
 	 */
@@ -32,13 +32,6 @@ class EquipmentsManagerAdminSettings {
 					'active'   => 'Active',
 					'inactive' => 'Inactive',
 			),
-		),
-		array(
-			'name'          => 'category',
-			'title'         => 'Category',
-			'description'   => '',
-			'type'          => 'select',
-			'options'       => array(),
 		),
 		array(
 			'name'        => 'size',
@@ -96,7 +89,9 @@ class EquipmentsManagerAdminSettings {
 	 */
 	function __construct() {
 		add_action( 'init', array( $this, 'create_cpt' ) );
-		add_action( 'admin_menu', array( $this, 'create_custom_fields' ) );
+		add_action( 'admin_menu', array( $this, 'create_fields' ) );
+		add_action( 'save_post', array( $this, 'save_fields' ), 9, 2 );
+		add_action( 'display_custom_fields', array( $this, 'display_fields_values' ) );
 	}
 
 	/**
@@ -124,7 +119,7 @@ class EquipmentsManagerAdminSettings {
 				),
 
 				'public'      => true,
-				'supports'    => array( 'title', 'thumbnail' ),
+				'supports'    => array( 'title', 'editor', 'thumbnail' ),
 				'taxonomies'  => array( '' ),
 				'menu_icon'   => plugin_dir_url( __FILE__ ) . '../images/logo.png',
 				'has_archive' => true,
@@ -160,9 +155,9 @@ class EquipmentsManagerAdminSettings {
 	}
 
 	/**
-	 * Create the new Custom Fields meta box
+	 * Create Custom Fields meta box.
 	 */
-	function create_custom_fields() {
+	function create_fields() {
 		// Adding custom fields to the `equipments` CPT.
 		add_meta_box( 'equipments-manager-quipment-details',
 			'Equipment Details',
@@ -210,24 +205,6 @@ class EquipmentsManagerAdminSettings {
 									);
 								}
 							}
-
-							if ( 'category' === $custom_field['name'] ) {
-								$options = get_terms( array(
-									'taxonomy' => 'equipments-category',
-									'hide_empty' => false,
-								) );
-								$selected = get_post_meta( $post->ID, $this->prefix . $custom_field['name'], true );
-								if ( ! empty( $options ) ) {
-									foreach ( $options as $option ) {
-										printf(
-											'<option %s value="%s" >%s</option>',
-											( $option->term_id === $selected )? 'selected': '',
-											esc_attr( $option->term_id ),
-											esc_html( $option->name )
-										);
-									}
-								}
-							}
 							printf( '</select>' );
 							break;
 						default:
@@ -255,5 +232,70 @@ class EquipmentsManagerAdminSettings {
 			<?php endforeach; ?>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Save the Custom Field values.
+	 */
+	function save_fields( $post_id, $post ) {
+		if (
+			! isset( $_POST['equipments-manager-custom-fields_wpnonce'] ) ||
+			! wp_verify_nonce( $_POST['equipments-manager-custom-fields_wpnonce'], 'equipments-manager-custom-fields' )
+		) {
+			return;
+		}
+
+		if ( $this->post_type !== $post->post_type || ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
+
+		foreach ( $this->custom_fields as $custom_field ) {
+			$field = $this->prefix . $custom_field['name'];
+			if ( isset( $_POST[ $field ] ) && ! empty( trim( $_POST[ $field ] ) ) ) {
+				$value = $_POST[ $field ];
+
+				update_post_meta( $post_id, $field, $value );
+			} else {
+				delete_post_meta( $post_id, $field );
+			}
+		}
+	}
+
+	/**
+	 * Display custom filed values on front end.
+	 */
+	function display_fields_values() {
+		global $post;
+
+		if ( ! $post instanceof WP_Post ) {
+			return;
+		}
+
+		$fields = get_post_meta( $post->ID );
+
+		printf( '<div class="equipments-manager-fields"><h3>Details</h3>' );
+		$categories = get_the_terms( $post, 'equipments-category' );
+		if ( $categories && is_array( $categories ) && ! empty( $categories ) ) {
+		    printf( '<div class="equipments-manager-field"><label>Category</label>' );
+			foreach ( $categories as $category ) {
+				printf(
+					'<span><a href="%s">%s</a>,&nbsp;</span>',
+					esc_url( get_term_link( $category->term_id ) ),
+					esc_attr( $category->name )
+				);
+			}
+			printf( '</div>' );
+		}
+		foreach ( $this->custom_fields as $custom_field ) {
+			$field = $this->prefix . $custom_field['name'];
+			if ( isset( $field ) ) {
+			    printf(
+					'<div class="equipments-manager-field"><label>%s</label><span>%s</span></div>',
+					esc_attr( $custom_field['title'] ),
+					esc_html( $fields[ $field ][0] )
+				);
+			}
+		}
+		printf( '</div>' );
 	}
 }

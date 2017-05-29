@@ -1,3 +1,9 @@
 .menu-icon-equipments img {
     width: 20px;
 }
+.equipments-manager-field label {
+    min-width: 125px;
+}
+.equipments-manager-field span {
+    font-style: italic;
+}
