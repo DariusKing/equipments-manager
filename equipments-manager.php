@@ -26,7 +26,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Include admin related settings and CPT creation.
 require_once 'includes/admin-settings.php';
-$admin = new EquipmentsManagerAdminSettings();
+require_once 'includes/assignment.php';
+
+$admin      = new EquipmentsManagerAdminSettings();
+$assignment = new EquipmentsManagerAssignment();
 
 /**
  * Add custom CSS files.

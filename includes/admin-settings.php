@@ -95,7 +95,7 @@ class EquipmentsManagerAdminSettings {
 	}
 
 	/**
-	 * Creating custom post type `Equipments`.
+	 * Creating custom post type.
 	 */
 	function create_cpt() {
 
@@ -103,19 +103,19 @@ class EquipmentsManagerAdminSettings {
 		register_post_type( 'equipments',
 			array(
 				'labels' => array(
-					'name'               => 'Equipments',
-					'singular_name'      => 'Equipment',
-					'add_new'            => 'Add New',
-					'add_new_item'       => 'Add New Equipment',
-					'edit'               => 'Edit',
-					'edit_item'          => 'Edit Equipment',
-					'new_item'           => 'New Equipment',
-					'view'               => 'View',
-					'view_item'          => 'View Equipment',
-					'search_items'       => 'Search Equipments',
-					'not_found'          => 'No Equipments found',
-					'not_found_in_trash' => 'No Equipments found in Trash',
-					'parent'             => 'Parent Equipments',
+					'name'               => __( 'Equipments', 'equipments-manager' ),
+					'singular_name'      => __( 'Equipment', 'equipments-manager' ),
+					'add_new'            => __( 'Add New Equipment', 'equipments-manager' ),
+					'add_new_item'       => __( 'Add New Equipment', 'equipments-manager' ),
+					'edit'               => __( 'Edit', 'equipments-manager' ),
+					'edit_item'          => __( 'Edit Equipment', 'equipments-manager' ),
+					'new_item'           => __( 'New Equipment', 'equipments-manager' ),
+					'view'               => __( 'View', 'equipments-manager' ),
+					'view_item'          => __( 'View Equipment', 'equipments-manager' ),
+					'search_items'       => __( 'Search Equipments', 'equipments-manager' ),
+					'not_found'          => __( 'No Equipments found', 'equipments-manager' ),
+					'not_found_in_trash' => __( 'No Equipments found in Trash', 'equipments-manager' ),
+					'parent'             => __( 'Parent Equipments', 'equipments-manager' ),
 				),
 
 				'public'      => true,
@@ -142,7 +142,7 @@ class EquipmentsManagerAdminSettings {
 		);
 
 		$args = array(
-			'hierarchical'      => false,
+			'hierarchical'      => true,
 			'labels'            => $labels,
 			'show_ui'           => true,
 			'show_in_reset'     => true,
@@ -267,7 +267,7 @@ class EquipmentsManagerAdminSettings {
 	function display_fields_values() {
 		global $post;
 
-		if ( ! $post instanceof WP_Post ) {
+		if ( $post->post_type !== $this->post_type || ! $post instanceof WP_Post ) {
 			return;
 		}
 
@@ -276,7 +276,7 @@ class EquipmentsManagerAdminSettings {
 		printf( '<div class="equipments-manager-fields"><h3>Details</h3>' );
 		$categories = get_the_terms( $post, 'equipments-category' );
 		if ( $categories && is_array( $categories ) && ! empty( $categories ) ) {
-		    printf( '<div class="equipments-manager-field"><label>Category</label>' );
+			printf( '<div class="equipments-manager-field"><label>Category</label>' );
 			foreach ( $categories as $category ) {
 				printf(
 					'<span><a href="%s">%s</a>,&nbsp;</span>',
@@ -288,8 +288,8 @@ class EquipmentsManagerAdminSettings {
 		}
 		foreach ( $this->custom_fields as $custom_field ) {
 			$field = $this->prefix . $custom_field['name'];
-			if ( isset( $field ) ) {
-			    printf(
+			if ( ! empty( $fields[ $field ][0] ) ) {
+				printf(
 					'<div class="equipments-manager-field"><label>%s</label><span>%s</span></div>',
 					esc_attr( $custom_field['title'] ),
 					esc_html( $fields[ $field ][0] )
