@@ -25,16 +25,15 @@ class EquipmentsManagerAssignment {
 		wp_enqueue_script( 'jquery-ui-autocomplete' );
 		wp_enqueue_style( 'my-jquery-ui' );
 
-
-		add_action( 'wp_ajax_em_get_category', array( $this, 'autocomplete_suggestions' ) );
-		add_action( 'wp_ajax_nopriv_em_get_category', array( $this, 'autocomplete_suggestions' ) );
+		// Ajax handler for autocomplete suggestions request.
+		add_action( 'wp_ajax_em_get_suggestions', array( $this, 'autocomplete_suggestions' ) );
+		add_action( 'wp_ajax_nopriv_em_get_suggestions', array( $this, 'autocomplete_suggestions' ) );
 	}
 
 	/**
 	 * Display the assignment fields.
 	 */
 	function assignment_fields_display() {
-//	    echo urldecode('http://localhost/serveon/wp-admin/load-scripts.php?c=1&load%5B%5D=jquery-ui-core,jquery-ui-widget,jquery-ui-position,jquery-ui-menu,wp-a11y,jquery-ui-autocomplete,hoverIntent,common,admin-bar,pa&load%5B%5D=ssword-strength-meter,underscore,wp-util,user-profile,svg-painter,heartbeat,wp-auth-check,jquery-ui-mouse,jquery-ui-resizable,jq&load%5B%5D=uery-ui-draggable,jquery-ui-button,jquery-ui-dialog&ver=4.5.3');
 		// If is current user's profile (profile.php)
 		if ( defined( 'IS_PROFILE_PAGE' ) && IS_PROFILE_PAGE ) {
 			$user_id = get_current_user_id();
@@ -60,9 +59,8 @@ class EquipmentsManagerAssignment {
 			<tr>
 				<th width="2%"></th>
 				<th width="30%">Category</th>
-				<th width="30%">Item</th>
+				<th width="30%">Equipment</th>
 				<th width="30%">Qty</th>
-<!--				<th width="2%"></th>-->
 			</tr>
 			</thead>
 			<tbody>
@@ -76,11 +74,11 @@ class EquipmentsManagerAssignment {
 						<td><a class="button remove-row" href="#">-</a></td>
 						<td>
 							<input type="text" class="widefat em_category" name="category[]" value="<?php if ( '' !== $assignment['category'] ) echo esc_attr( $assignment['category'] ); ?>"/>
-							<input type="hidden" class="widefat em_category" name="category_id[]" value="<?php if ( '' !== $assignment['category_id'] ) echo esc_attr( $assignment['category_id'] ); ?>"/>
+							<input type="hidden" class="widefat em_category_id" name="category_id[]" value="<?php if ( '' !== $assignment['category_id'] ) echo esc_attr( $assignment['category_id'] ); ?>"/>
 						</td>
 						<td>
-							<input type="text" class="widefat em_item" name="item[]" value="<?php if ( '' !== $assignment['item'] ) echo esc_attr( $assignment['item'] ); ?>"/>
-							<input type="hidden" class="widefat em_item" name="item_d[]" value="<?php if ( '' !== $assignment['item_id'] ) echo esc_attr( $assignment['item_id'] ); ?>"/>
+							<input type="text" class="widefat em_equipment" name="equipment[]" value="<?php if ( '' !== $assignment['equipment'] ) echo esc_attr( $assignment['equipment'] ); ?>"/>
+							<input type="hidden" class="widefat em_equipment_id" name="equipment_d[]" value="<?php if ( '' !== $assignment['equipment_id'] ) echo esc_attr( $assignment['equipment_id'] ); ?>"/>
 						</td>
 						<td>
 							<input type="text" class="widefat em_qty" name="qty[]" value="<?php if ( '' !== $assignment['qty'] ) echo esc_attr( $assignment['qty'] ); ?>"/>
@@ -93,11 +91,11 @@ class EquipmentsManagerAssignment {
 					<td><a class="button remove-row" href="#">-</a></td>
 					<td>
 						<input type="text" class="widefat em_category" name="category[]" />
-						<input type="hidden" class="widefat em_category" name="category_id[]" />
+						<input type="hidden" class="widefat em_category_id" name="category_id[]" />
 					</td>
 					<td>
-						<input type="text" class="widefat em_item" name="item[]" />
-						<input type="hidden" class="widefat em_item" name="item_id[]" />
+						<input type="text" class="widefat em_equipment" name="equipment[]" />
+						<input type="hidden" class="widefat em_equipment_id" name="equipment_id[]" />
 					</td>
 					<td>
 						<input type="text" class="widefat em_qty" name="qty[]" />
@@ -111,11 +109,11 @@ class EquipmentsManagerAssignment {
 					<td><a class="button remove-row" href="#">-</a></td>
 					<td>
 						<input type="text" class="widefat em_category" name="category[]" />
-						<input type="hidden" class="widefat em_category" name="category_id[]" />
+						<input type="hidden" class="widefat em_category_id" name="category_id[]" />
 					</td>
 					<td>
-						<input type="text" class="widefat em_item" name="item[]" />
-						<input type="hidden" class="widefat em_item" name="item_id[]" />
+						<input type="text" class="widefat em_equipment" name="equipment[]" />
+						<input type="hidden" class="widefat em_equipment_id" name="equipment_id[]" />
 					</td>
 					<td>
 						<input type="text" class="widefat em_qty" name="qty[]" />
@@ -128,11 +126,11 @@ class EquipmentsManagerAssignment {
 				<td><a class="button remove-row" href="#">-</a></td>
 				<td>
 					<input type="text" class="widefat em_category" name="category[]" />
-					<input type="hidden" class="widefat em_category" name="category_id[]" />
+					<input type="hidden" class="widefat em_category_id" name="category_id[]" />
 				</td>
 				<td>
-					<input type="text" class="widefat em_item" name="item[]" />
-					<input type="hidden" class="widefat em_item" name="item_id[]" />
+					<input type="text" class="widefat em_equipment" name="equipment[]" />
+					<input type="hidden" class="widefat em_equipment_id" name="equipment_id[]" />
 				</td>
 				<td>
 					<input type="text" class="widefat em_qty" name="qty[]" />
@@ -173,12 +171,12 @@ class EquipmentsManagerAssignment {
 		$new = array();
 
 
-		$categories   = $_POST['category'];
-		$category_ids = $_POST['category_id'];
-		$items        = $_POST['item'];
-		$item_ids     = $_POST['item_id'];
-		$qty          = $_POST['qty'];
-		$qty_ids      = $_POST['qty_id'];
+		$categories    = $_POST['category'];
+		$category_ids  = $_POST['category_id'];
+		$equipments    = $_POST['equipment'];
+		$equipment_ids = $_POST['equipment_id'];
+		$qty           = $_POST['qty'];
+		$qty_ids       = $_POST['qty_id'];
 
 		$count = count( $categories );
 
@@ -186,8 +184,8 @@ class EquipmentsManagerAssignment {
 			if ( ! empty( $categories[ $i ] ) ) {
 				$new[ $i ]['category']    = $categories[ $i ];
 				$new[ $i ]['category_id'] = absint( $category_ids[ $i ] );
-				$new[ $i ]['item']        = $items[ $i ];
-				$new[ $i ]['item_id']     = absint( $item_ids[ $i ] );
+				$new[ $i ]['equipment']        = $equipments[ $i ];
+				$new[ $i ]['equipment_id']     = absint( $equipment_ids[ $i ] );
 				$new[ $i ]['qty']         = absint( $qty[ $i ] );
 			}
 		}
@@ -200,19 +198,41 @@ class EquipmentsManagerAssignment {
 	}
 
 	function autocomplete_suggestions() {
-		$terms = get_terms( array(
-			'taxonomy' => 'equipments-category',
-			'search'   => trim( esc_attr( strip_tags( $_REQUEST['term'] ) ) ),
-		) );
-
 		$suggestions = array();
+		if ( 'category' === trim( $_REQUEST['type'] ) ) {
+			$terms = get_terms( array(
+				'taxonomy' => 'equipments-category',
+				'search'   => trim( esc_attr( strip_tags( $_REQUEST['term'] ) ) ),
+			) );
 
-		foreach ( $terms as $term ) {
-			$suggestion = array();
-			$suggestion['label'] = esc_html( $term->name );
-			$suggestion['id']    = $term->term_id;
+			foreach ( $terms as $term ) {
+				$suggestions[] = array(
+					'label' => esc_html( $term->name ),
+					'id'    => $term->term_id,
+				);
+			}
+		} elseif ( 'equipment' === trim( $_REQUEST['type'] ) ) {
+			$the_query = new WP_Query( array(
+				'post_type' => 'equipments',
+				's'    => trim( esc_attr( strip_tags( $_REQUEST['term'] ) ) ),
+				'tax_query' => array(
+					array(
+						'taxonomy' => 'equipments-category',
+						'field'    => 'term_id',
+						'terms'    => absint( $_REQUEST['category'] ),
+					),
+				),
+			) );
 
-			$suggestions[] = $suggestion;
+			if ( $the_query->have_posts() ) {
+				while ( $the_query->have_posts() ) {
+					$the_query->the_post();
+					$suggestions[] = array(
+						'label' => esc_html( get_the_title() ),
+						'id'    => get_the_ID(),
+					);
+				}
+			}
 		}
 
 		$response = $_GET['callback'] . '(' . json_encode( $suggestions ) . ')';
