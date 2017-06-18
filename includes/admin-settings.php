@@ -252,11 +252,15 @@ class EquipmentsManagerAdminSettings {
 		foreach ( $this->custom_fields as $custom_field ) {
 			$field = $this->prefix . $custom_field['name'];
 			if ( isset( $_POST[ $field ] ) && ! empty( trim( $_POST[ $field ] ) ) ) {
-				$value = $_POST[ $field ];
-
-				update_post_meta( $post_id, $field, $value );
+				update_post_meta( $post_id, $field, $_POST[ $field ] );
 			} else {
 				delete_post_meta( $post_id, $field );
+			}
+
+			// Save quantity in another private meta field to calculate available quantity.
+			$private_qty = $this->prefix . 'quantity';
+			if ( isset( $_POST[ $private_qty ] ) && ! empty( trim( $_POST[ $private_qty ] ) ) ) {
+				update_post_meta( $post_id, '_' . $this->prefix . 'avail_quantity', $_POST[ $private_qty ] );
 			}
 		}
 	}

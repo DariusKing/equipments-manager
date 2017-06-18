@@ -78,7 +78,7 @@ class EquipmentsManagerAssignment {
 						</td>
 						<td>
 							<input type="text" class="widefat em_equipment" name="equipment[]" value="<?php if ( '' !== $assignment['equipment'] ) echo esc_attr( $assignment['equipment'] ); ?>"/>
-							<input type="hidden" class="widefat em_equipment_id" name="equipment_d[]" value="<?php if ( '' !== $assignment['equipment_id'] ) echo esc_attr( $assignment['equipment_id'] ); ?>"/>
+							<input type="hidden" class="widefat em_equipment_id" name="equipment_id[]" value="<?php if ( '' !== $assignment['equipment_id'] ) echo esc_attr( $assignment['equipment_id'] ); ?>"/>
 						</td>
 						<td>
 							<input type="text" class="widefat em_qty" name="qty[]" value="<?php if ( '' !== $assignment['qty'] ) echo esc_attr( $assignment['qty'] ); ?>"/>
@@ -182,13 +182,16 @@ class EquipmentsManagerAssignment {
 
 		for ( $i = 0; $i < $count; $i++ ) {
 			if ( ! empty( $categories[ $i ] ) ) {
-				$new[ $i ]['category']    = $categories[ $i ];
-				$new[ $i ]['category_id'] = absint( $category_ids[ $i ] );
-				$new[ $i ]['equipment']        = $equipments[ $i ];
-				$new[ $i ]['equipment_id']     = absint( $equipment_ids[ $i ] );
-				$new[ $i ]['qty']         = absint( $qty[ $i ] );
+				$new[ $i ]['category']     = $categories[ $i ];
+				$new[ $i ]['category_id']  = absint( $category_ids[ $i ] );
+				$new[ $i ]['equipment']    = $equipments[ $i ];
+				$new[ $i ]['equipment_id'] = absint( $equipment_ids[ $i ] );
+				$new[ $i ]['qty']          = absint( $qty[ $i ] );
 			}
 		}
+
+		// Update private meta data.
+		self::update_private_avail_qty_meta( $new, $old );
 
 		if ( ! empty( $new ) && $new !== $old ) {
 			update_user_meta( $user_id, 'em_assignments', $new );
@@ -197,6 +200,9 @@ class EquipmentsManagerAssignment {
 		}
 	}
 
+	/**
+	 * Helper function for autocomplete suggestions.
+	 */
 	function autocomplete_suggestions() {
 		$suggestions = array();
 		if ( 'category' === trim( $_REQUEST['type'] ) ) {
@@ -238,5 +244,61 @@ class EquipmentsManagerAssignment {
 		$response = $_GET['callback'] . '(' . json_encode( $suggestions ) . ')';
 		echo $response;
 		exit;
+	}
+
+	/**
+	 * Helper function to update private avail qty meta data.
+	 *
+	 * @param array $new New data.
+	 * @param array $old Old data.
+	 */
+	function update_private_avail_qty_meta( &$new, &$old ) {
+		$new_bkup = $new;
+		$old_bkup = $old;
+
+		foreach ( $new_bkup as $nkey => $nitem ) {
+			$key = 0;
+			foreach ( $old_bkup as $okey => $oitem ) {
+				if ( $nitem['equipment_id'] === $oitem['equipment_id'] ) {
+					$key = $okey;
+					break;
+				}
+			}
+
+			$diff                = absint( $nitem['qty'] ) - absint( $old[ $key ]['qty'] );
+			$equipment_avail_qty = get_post_meta( $nitem['equipment_id'], '_em_avail_quantity', true );
+			$new_avail_qty       = absint( $equipment_avail_qty ) - $diff;
+
+			if ( $new_avail_qty < 0 ) {
+				$new[ $nkey ]['qty'] = $old[ $key ]['qty'];
+			} else {
+				update_post_meta( $nitem['equipment_id'], '_em_avail_quantity', $new_avail_qty );
+			}
+
+			unset( $new_bkup[ $nkey ] );
+			unset( $old_bkup[ $key ] );
+		}
+
+		if ( ! empty( $new_bkup ) ) {
+		    foreach ( $new_bkup as $nkey => $nitem ) {
+			    $equipment_avail_qty = get_post_meta( $nitem['equipment_id'], '_em_avail_quantity', true );
+			    $new_avail_qty       = absint( $equipment_avail_qty ) - absint( $nitem['qty'] );
+
+			    if ( $new_avail_qty < 0 ) {
+				    $new[ $nkey ]['qty'] = 0;
+			    } else {
+					update_post_meta( $nitem['equipment_id'], '_em_avail_quantity', $new_avail_qty );
+				}
+		    }
+		}
+
+		if ( ! empty( $old_bkup ) ) {
+			foreach ( $old_bkup as $okey => $oitem ) {
+				$equipment_avail_qty = get_post_meta( $oitem['equipment_id'], '_em_avail_quantity', true );
+				$new_avail_qty       = absint( $equipment_avail_qty ) + absint( $oitem['qty'] );
+
+				update_post_meta( $oitem['equipment_id'], '_em_avail_quantity', $new_avail_qty );
+			}
+		}
 	}
 }
