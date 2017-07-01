@@ -10,9 +10,7 @@ jQuery(document).ready(function($) {
 	};
 
 	$('.em_category').autocomplete(autoCompleteOptionsCategory);
-	$('.em_category, .em_equipment').on( 'autocompleteselect', function ( event, ui ) {
-		$( event.target ).next().val( ui.item.id );
-	} );
+	$('.em_category, .em_equipment').on( 'autocompleteselect', autocompleteSelectAction );
 
 	// Enable autocomplete for existing item fields.
 	var autoCompleteOptionsEquipemts = {
@@ -25,7 +23,11 @@ jQuery(document).ready(function($) {
 		select: function( event, ui ) {}
 	};
 
-	$('.em_equipment').autocomplete(autoCompleteOptionsEquipemts);
+	$( '.em_equipment' ).autocomplete(autoCompleteOptionsEquipemts);
+	var previous;
+	$( '.em_qty' ).on( 'focus', function() {
+		previous = this.value;
+	} ).change( qty_validation );
 
 	$('#add-row').on('click', function() {
 		var row = $('.empty-row.screen-reader-text').clone( false );
@@ -35,14 +37,31 @@ jQuery(document).ready(function($) {
 
 		$( '.ui-autocomplete-input .em_category' ).autocomplete(autoCompleteOptionsCategory);
 		$( '.ui-autocomplete-input .em_equipment' ).autocomplete(autoCompleteOptionsEquipemts);
-		$( '.ui-autocomplete-input .em_category, .ui-autocomplete-input .em_equipment' ).on( 'autocompleteselect', function ( event, ui ) {
-			$( event.target ).next().val( ui.item.id );
-		} );
+		$( '.ui-autocomplete-input .em_category, .ui-autocomplete-input .em_equipment' ).on( 'autocompleteselect', autocompleteSelectAction );
+		$( '.ui-autocomplete-input .em_qty' ).on( 'focus', function() {
+			previous = this.value;
+		} ).change( qty_validation );
 		return false;
 	});
 
+	function autocompleteSelectAction( event, ui ) {
+		$( event.target ).next().val( ui.item.id );
+		$( event.target ).attr( 'data-avail-qty', ui.item.avail_qty );
+	}
+
+	function qty_validation() {
+		var avail_qty = parseInt ( $( this ).parent().parent().find('.em_equipment').attr('data-avail-qty') );
+		if ( parseInt ( $( this ).val() ) > avail_qty ) {
+			alert('Sorry! Total available quantity is ' + avail_qty );
+			$( this ).val( previous );
+			$( this ).focus();
+		} else {
+			previous = $( this ).val();
+		}
+	}
+
 	$('.remove-row').on('click', function() {
-		$(this).parents('tr').remove();
+		$( this ).parents('tr').remove();
 		return false;
 	});
 

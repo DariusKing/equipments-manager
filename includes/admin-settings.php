@@ -92,6 +92,9 @@ class EquipmentsManagerAdminSettings {
 		add_action( 'admin_menu', array( $this, 'create_fields' ) );
 		add_action( 'save_post', array( $this, 'save_fields' ), 9, 2 );
 		add_action( 'display_custom_fields', array( $this, 'display_fields_values' ) );
+
+		add_filter( 'manage_equipments_posts_columns', array( $this, 'add_total_avail_qty_column' ) );
+		add_action( 'manage_equipments_posts_custom_column', array( $this, 'display_total_avail_qty' ), 10, 2 );
 	}
 
 	/**
@@ -301,5 +304,35 @@ class EquipmentsManagerAdminSettings {
 			}
 		}
 		printf( '</div>' );
+	}
+
+	/**
+	 * Add new column in the admin screen for Equipments total and availability.
+	 *
+	 * @param array $columns array of default columns title.
+	 *
+	 * @return array
+	 */
+	function add_total_avail_qty_column( $columns ) {
+		$columns['total_qty'] = __( 'Total Quantity' );
+		$columns['avail_qty'] = __( 'Available Quantity' );
+
+		return $columns;
+	}
+
+	/**
+	 * Displays the quipments total and availability.
+	 *
+	 * @param string $column  The name of the column to display.
+	 * @param int    $post_id The ID of the current post. Can also be taken from the global $post->ID.
+	 *
+	 * @return string
+	 */
+	function display_total_avail_qty( $column, $post_id ) {
+		if ( 'total_qty' === $column ) {
+			echo esc_html( get_post_meta( $post_id, 'em_quantity', true ) );
+		} elseif ( 'avail_qty' === $column ) {
+			echo esc_html( get_post_meta( $post_id, '_em_avail_quantity', true ) );
+		}
 	}
 }

@@ -77,11 +77,11 @@ class EquipmentsManagerAssignment {
 							<input type="hidden" class="widefat em_category_id" name="category_id[]" value="<?php if ( '' !== $assignment['category_id'] ) echo esc_attr( $assignment['category_id'] ); ?>"/>
 						</td>
 						<td>
-							<input type="text" class="widefat em_equipment" name="equipment[]" value="<?php if ( '' !== $assignment['equipment'] ) echo esc_attr( $assignment['equipment'] ); ?>"/>
+							<input type="text" class="widefat em_equipment" name="equipment[]" value="<?php if ( '' !== $assignment['equipment'] ) echo esc_attr( $assignment['equipment'] ); ?>" data-avail-qty="<?php echo get_post_meta( $assignment['equipment_id'], '_em_avail_quantity', true ); ?>"/>
 							<input type="hidden" class="widefat em_equipment_id" name="equipment_id[]" value="<?php if ( '' !== $assignment['equipment_id'] ) echo esc_attr( $assignment['equipment_id'] ); ?>"/>
 						</td>
 						<td>
-							<input type="text" class="widefat em_qty" name="qty[]" value="<?php if ( '' !== $assignment['qty'] ) echo esc_attr( $assignment['qty'] ); ?>"/>
+							<input type="text" min="1" max="5" class="widefat em_qty" name="qty[]" value="<?php if ( '' !== $assignment['qty'] ) echo esc_attr( $assignment['qty'] ); ?>"/>
 						</td>
 					</tr>
 					<?php
@@ -213,8 +213,9 @@ class EquipmentsManagerAssignment {
 
 			foreach ( $terms as $term ) {
 				$suggestions[] = array(
-					'label' => esc_html( $term->name ),
-					'id'    => $term->term_id,
+					'label'     => esc_html( $term->name ),
+					'id'        => $term->term_id,
+					'avail_qty' => 0,
 				);
 			}
 		} elseif ( 'equipment' === trim( $_REQUEST['type'] ) ) {
@@ -234,10 +235,12 @@ class EquipmentsManagerAssignment {
 				while ( $the_query->have_posts() ) {
 					$the_query->the_post();
 					$suggestions[] = array(
-						'label' => esc_html( get_the_title() ),
-						'id'    => get_the_ID(),
+						'label'     => esc_html( get_the_title() ),
+						'id'        => get_the_ID(),
+						'avail_qty' => get_post_meta( get_the_ID(), '_em_avail_quantity', true ),
 					);
 				}
+				wp_reset_postdata();
 			}
 		}
 
